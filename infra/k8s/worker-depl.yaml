@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: echoboard/worker
+          imagePullPolicy: Never
+          env:
+            - name: REDIS_HOST
+              value: 'redis-srv'
+            - name: REDIS_PORT
+              value: '6379'
+            - name: RESEND_API_KEY
+              value: 're_AaUvtS1p_NX7EY5fT88uv18qb1UnCni5x'
+            - name: FROM_EMAIL
+              value: 'EchoBoard <noreply@resend.dev>'
+            - name: VERIFIED_EMAIL
+              value: 'monnapuleismaelmours@gmail.com'
+            - name: LOG_LEVEL
+              value: 'info'
+
+---
