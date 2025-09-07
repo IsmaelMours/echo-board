@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 
 # Copy common package source
@@ -26,7 +26,7 @@ COPY server/ .
 RUN npm run build
 
 # Production stage
-FROM node:18-alpine
+FROM node:24-alpine
 WORKDIR /app
 
 # Copy package files
