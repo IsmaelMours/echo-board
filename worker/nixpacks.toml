@@ -1,0 +1,20 @@
+[phases.setup]
+nixPkgs = ["nodejs-18_x", "npm-9_x"]
+
+[phases.install]
+cmds = [
+  "cd ../common && npm install",
+  "cd ../worker && npm install"
+]
+
+[phases.build]
+cmds = [
+  "cd ../common && npm run build",
+  "cd ../worker && npm run build"
+]
+
+[start]
+cmd = "node dist/index.js"
+
+[variables]
+NODE_ENV = "production"
