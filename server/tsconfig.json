@@ -9,7 +9,13 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "baseUrl": "./",
+    "paths": {
+      "../../common/build": ["../common/build"],
+      "../../common/build/*": ["../common/build/*"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
