@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { BadRequestError } from '../errors/bad-request-error';
 import { UserService } from '../services/users/UserService';
-import { UserRoles } from '../../common/build/index';
+import { UserRoles } from '../types';
 import { QueueService } from '../services/queue/QueueService';
 import jwt from 'jsonwebtoken';
 
