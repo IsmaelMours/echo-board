@@ -1,0 +1,36 @@
+apiVersion: skaffold/v4beta3
+kind: Config
+manifests:
+  rawYaml:
+    - ./infra/k8s/client-depl.yaml
+    - ./infra/k8s/server-depl.yaml
+    - ./infra/k8s/worker-depl.yaml
+    - ./infra/k8s/redis-depl.yaml
+build:
+  local:
+    push: false
+  artifacts:
+    - image: echoboard/client
+      context: client
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: '**/*.js'
+            dest: .
+    - image: echoboard/server
+      context: .
+      docker:
+        dockerfile: server/Dockerfile
+      sync:
+        manual:
+          - src: 'server/src/**/*.ts'
+            dest: .
+    - image: echoboard/worker
+      context: worker
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: 'src/**/*.ts'
+            dest: .
