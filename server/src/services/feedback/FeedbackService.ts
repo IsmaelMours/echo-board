@@ -2,7 +2,7 @@
 
 import { FeedbackRepository } from '../../repositories/FeedbackRepository';
 import { FeedbackDoc } from '../../models/Feedback';
-import { FeedbackStatuses } from '../../../common/build/index';
+import { FeedbackStatuses } from '../../types';
 import { BadRequestError } from '../../errors/bad-request-error';
 
 class FeedbackService {
