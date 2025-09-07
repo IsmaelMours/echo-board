@@ -1,0 +1,90 @@
+services:
+  # EchoBoard Server (API)
+  - type: web
+    name: echoboard-server
+    env: node
+    plan: free
+    buildCommand: |
+      cd server
+      npm install
+      cd ../common
+      npm install
+      npm run build
+      cd ../server
+      npm run build
+    startCommand: cd server && node dist/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: JWT_KEY
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        value: 6379
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FROM_EMAIL
+        value: EchoBoard <noreply@resend.dev>
+
+  # EchoBoard Worker (Background Jobs)
+  - type: worker
+    name: echoboard-worker
+    env: node
+    plan: free
+    buildCommand: |
+      cd worker
+      npm install
+      cd ../common
+      npm install
+      npm run build
+      cd ../worker
+      npm run build
+    startCommand: cd worker && node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        value: 6379
+      - key: RESEND_API_KEY
+        sync: false
+      - key: FROM_EMAIL
+        value: EchoBoard <noreply@resend.dev>
+      - key: LOG_LEVEL
+        value: info
+
+  # EchoBoard Client (Frontend)
+  - type: web
+    name: echoboard-client
+    env: static
+    plan: free
+    buildCommand: |
+      cd client
+      npm install
+      npm run build
+    staticPublishPath: ./client/dist
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://echoboard-server.onrender.com/api/:splat
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+databases:
+  # MongoDB Database
+  - name: echoboard-mongodb
+    plan: free
+    databaseName: echoboard
+    user: echoboard
+
+  # Redis Cache
+  - name: echoboard-redis
+    plan: free
