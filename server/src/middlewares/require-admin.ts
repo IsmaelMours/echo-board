@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { NotAuthorizedError } from '../errors/not-authorized-error';
-import { UserRoles } from '../../common/build/events/types/types';
+import { UserRoles } from '../../common/build';
 
 declare global {
   namespace Express {

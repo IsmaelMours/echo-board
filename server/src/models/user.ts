@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { Password } from '../utilities/password';
-import { UserRoles } from '../../common/build/events/types/types';
+import { UserRoles } from '../../common/build';
 
 interface UserAttrs {
   email: string;
