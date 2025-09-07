@@ -1,4 +1,4 @@
-import { FeedbackStatuses } from '../../common/build/events/types/types';
+import { FeedbackStatuses } from '../../common/build';
 import mongoose from 'mongoose';
 import { UserDoc } from './user';
 
