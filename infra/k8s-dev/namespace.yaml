@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: echoboard-dev
+  labels:
+    name: echoboard-dev
+    environment: development

@@ -1,0 +1,21 @@
+{
+  "name": "echoboard",
+  "version": "1.0.0",
+  "description": "EchoBoard - Feedback Management System",
+  "main": "server/dist/index.js",
+  "scripts": {
+    "start": "cd server && node dist/index.js",
+    "build": "npm run build:common && npm run build:server",
+    "build:common": "cd common && npm install && npm run build",
+    "build:server": "cd server && npm install && npm run build",
+    "dev": "cd server && npm run dev",
+    "install:all": "cd common && npm install && cd ../server && npm install && cd ../worker && npm install && cd ../client && npm install"
+  },
+  "keywords": ["feedback", "management", "react", "nodejs", "mongodb"],
+  "author": "Ismael Mours",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

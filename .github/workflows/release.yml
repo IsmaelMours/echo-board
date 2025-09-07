@@ -1,0 +1,189 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  DOCKER_HUB_USERNAME: ismaelmours
+  REGISTRY: docker.io
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get commits since last tag
+          if git describe --tags --abbrev=0 HEAD~1 >/dev/null 2>&1; then
+            LAST_TAG=$(git describe --tags --abbrev=0 HEAD~1)
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" $LAST_TAG..HEAD)
+          else
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --max-count=20)
+          fi
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: EchoBoard ${{ steps.get_version.outputs.version }}
+          body: |
+            ## Changes in this Release
+            
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ## Docker Images
+            
+            - `ismaelmours/echoboard-server:${{ steps.get_version.outputs.version }}`
+            - `ismaelmours/echoboard-client:${{ steps.get_version.outputs.version }}`
+            - `ismaelmours/echoboard-worker:${{ steps.get_version.outputs.version }}`
+            
+            ## Installation
+            
+            Update your deployment files to use the new image tags:
+            
+            ```yaml
+            image: ismaelmours/echoboard-server:${{ steps.get_version.outputs.version }}
+            ```
+          draft: false
+          prerelease: false
+
+  build-and-push:
+    name: Build and Push Release Images
+    runs-on: ubuntu-latest
+    needs: create-release
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.DOCKER_HUB_USERNAME }}/echoboard-server
+            ${{ env.DOCKER_HUB_USERNAME }}/echoboard-client
+            ${{ env.DOCKER_HUB_USERNAME }}/echoboard-worker
+          tags: |
+            type=ref,event=tag
+            type=raw,value=${{ needs.create-release.outputs.version }}
+
+      - name: Build and push server image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./server/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKER_HUB_USERNAME }}/echoboard-server:${{ needs.create-release.outputs.version }}
+            ${{ env.DOCKER_HUB_USERNAME }}/echoboard-server:latest
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build and push client image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          file: ./client/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKER_HUB_USERNAME }}/echoboard-client:${{ needs.create-release.outputs.version }}
+            ${{ env.DOCKER_HUB_USERNAME }}/echoboard-client:latest
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build and push worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./worker
+          file: ./worker/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKER_HUB_USERNAME }}/echoboard-worker:${{ needs.create-release.outputs.version }}
+            ${{ env.DOCKER_HUB_USERNAME }}/echoboard-worker:latest
+          labels: ${{ steps.meta.outputs.labels }}
+
+  update-deployment:
+    name: Update Deployment Files
+    runs-on: ubuntu-latest
+    needs: [create-release, build-and-push]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update deployment files
+        run: |
+          # Update k8s-dev deployment files with new version
+          sed -i "s|ismaelmours/echoboard-server:latest|ismaelmours/echoboard-server:${{ needs.create-release.outputs.version }}|g" k8s-dev/server-deployment.yaml
+          sed -i "s|ismaelmours/echoboard-client:latest|ismaelmours/echoboard-client:${{ needs.create-release.outputs.version }}|g" k8s-dev/client-deployment.yaml
+          sed -i "s|ismaelmours/echoboard-worker:latest|ismaelmours/echoboard-worker:${{ needs.create-release.outputs.version }}|g" k8s-dev/worker-deployment.yaml
+
+      - name: Commit updated deployment files
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add k8s-dev/*.yaml
+          git commit -m "Update deployment files for ${{ needs.create-release.outputs.version }}" || exit 0
+          git push
+
+  notify:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: [create-release, build-and-push, update-deployment]
+    if: always()
+    
+    steps:
+      - name: Notify Success
+        if: needs.build-and-push.result == 'success'
+        run: |
+          echo "✅ Release ${{ needs.create-release.outputs.version }} created successfully!"
+          echo "Docker images pushed to Docker Hub"
+          # Add Slack/Discord/Email notification here if needed
+
+      - name: Notify Failure
+        if: needs.build-and-push.result == 'failure'
+        run: |
+          echo "❌ Release ${{ needs.create-release.outputs.version }} failed!"
+          # Add Slack/Discord/Email notification here if needed
