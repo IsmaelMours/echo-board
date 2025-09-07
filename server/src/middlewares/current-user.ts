@@ -1,4 +1,4 @@
-import { UserRoles } from '../../common/build';
+import { UserRoles } from '../../common/build/index';
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { NotAuthorizedError } from '../errors/not-authorized-error';
