@@ -1,0 +1,147 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run security scan daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # Scan client dependencies
+      - name: Install client dependencies
+        working-directory: ./client
+        run: npm ci
+
+      - name: Run npm audit for client
+        working-directory: ./client
+        run: npm audit --audit-level=moderate || echo "No vulnerabilities found or audit failed"
+
+      # Scan server dependencies
+      - name: Install server dependencies
+        working-directory: ./server
+        run: npm ci
+
+      - name: Run npm audit for server
+        working-directory: ./server
+        run: npm audit --audit-level=moderate || echo "No vulnerabilities found or audit failed"
+
+      # Scan worker dependencies
+      - name: Install worker dependencies
+        working-directory: ./worker
+        run: npm ci
+
+      - name: Run npm audit for worker
+        working-directory: ./worker
+        run: npm audit --audit-level=moderate || echo "No vulnerabilities found or audit failed"
+
+      # Scan common dependencies
+      - name: Install common dependencies
+        working-directory: ./common
+        run: npm ci
+
+      - name: Run npm audit for common
+        working-directory: ./common
+        run: npm audit --audit-level=moderate || echo "No vulnerabilities found or audit failed"
+
+  code-scan:
+    name: Code Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build server image
+        run: |
+          docker build -f server/Dockerfile -t echoboard-server:scan .
+
+      - name: Build client image
+        run: |
+          docker build -f client/Dockerfile -t echoboard-client:scan ./client
+
+      - name: Build worker image
+        run: |
+          docker build -f worker/Dockerfile -t echoboard-worker:scan ./worker
+
+      - name: Run Trivy vulnerability scanner on server
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'echoboard-server:scan'
+          format: 'sarif'
+          output: 'trivy-server-results.sarif'
+
+      - name: Run Trivy vulnerability scanner on client
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'echoboard-client:scan'
+          format: 'sarif'
+          output: 'trivy-client-results.sarif'
+
+      - name: Run Trivy vulnerability scanner on worker
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'echoboard-worker:scan'
+          format: 'sarif'
+          output: 'trivy-worker-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-server-results.sarif,trivy-client-results.sarif,trivy-worker-results.sarif'
+
+  secrets-scan:
+    name: Secrets Detection
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified

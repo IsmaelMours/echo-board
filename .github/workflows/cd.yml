@@ -1,0 +1,165 @@
+name: CD - Deploy to Digital Ocean
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+        - development
+        - staging
+        - production
+
+env:
+  DOCKER_HUB_USERNAME: ismaelmours
+
+jobs:
+  deploy-development:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'development')
+    environment: development
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure Digital Ocean kubeconfig
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          args: kubernetes cluster kubeconfig save ${{ secrets.DO_CLUSTER_NAME }}
+
+      - name: Deploy to Kubernetes
+        run: |
+          # Update image tags in deployment files
+          sed -i "s|ismaelmours/echoboard-server:latest|ismaelmours/echoboard-server:${{ github.sha }}|g" k8s-dev/server-deployment.yaml
+          sed -i "s|ismaelmours/echoboard-client:latest|ismaelmours/echoboard-client:${{ github.sha }}|g" k8s-dev/client-deployment.yaml
+          sed -i "s|ismaelmours/echoboard-worker:latest|ismaelmours/echoboard-worker:${{ github.sha }}|g" k8s-dev/worker-deployment.yaml
+          
+          # Deploy to development namespace
+          kubectl apply -f k8s-dev/namespace.yaml
+          kubectl apply -f k8s-dev/secrets.yaml
+          kubectl apply -f k8s-dev/mongodb-deployment.yaml
+          kubectl apply -f k8s-dev/redis-deployment.yaml
+          kubectl apply -f k8s-dev/server-deployment.yaml
+          kubectl apply -f k8s-dev/worker-deployment.yaml
+          kubectl apply -f k8s-dev/client-deployment.yaml
+          kubectl apply -f k8s-dev/ingress.yaml
+
+      - name: Wait for deployment
+        run: |
+          kubectl wait --for=condition=available --timeout=300s deployment/server-depl -n echoboard-dev
+          kubectl wait --for=condition=available --timeout=300s deployment/worker-depl -n echoboard-dev
+          kubectl wait --for=condition=available --timeout=300s deployment/client-depl -n echoboard-dev
+
+      - name: Get deployment status
+        run: |
+          echo "## Deployment Status" >> $GITHUB_STEP_SUMMARY
+          echo "### Pods" >> $GITHUB_STEP_SUMMARY
+          kubectl get pods -n echoboard-dev >> $GITHUB_STEP_SUMMARY
+          echo "### Services" >> $GITHUB_STEP_SUMMARY
+          kubectl get services -n echoboard-dev >> $GITHUB_STEP_SUMMARY
+          echo "### Ingress" >> $GITHUB_STEP_SUMMARY
+          kubectl get ingress -n echoboard-dev >> $GITHUB_STEP_SUMMARY
+
+      - name: Health check
+        run: |
+          # Get the external IP
+          EXTERNAL_IP=$(kubectl get ingress echoboard-ingress -n echoboard-dev -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+          if [ -n "$EXTERNAL_IP" ]; then
+            echo "## Application URLs" >> $GITHUB_STEP_SUMMARY
+            echo "- **Application**: http://$EXTERNAL_IP" >> $GITHUB_STEP_SUMMARY
+            echo "- **Health Check**: http://$EXTERNAL_IP/api/health" >> $GITHUB_STEP_SUMMARY
+            
+            # Test health endpoint
+            sleep 30
+            if curl -f "http://$EXTERNAL_IP/api/health" > /dev/null 2>&1; then
+              echo "✅ Health check passed!" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ Health check failed!" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ External IP not available yet. Check ingress status." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging'
+    environment: staging
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure Digital Ocean kubeconfig
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          args: kubernetes cluster kubeconfig save ${{ secrets.DO_CLUSTER_NAME }}
+
+      - name: Deploy to Staging
+        run: |
+          echo "Staging deployment would go here"
+          echo "This is a placeholder for staging environment"
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure Digital Ocean kubeconfig
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          args: kubernetes cluster kubeconfig save ${{ secrets.DO_CLUSTER_NAME }}
+
+      - name: Deploy to Production
+        run: |
+          echo "Production deployment would go here"
+          echo "This is a placeholder for production environment"
+
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [deploy-development, deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+      - name: Notify Success
+        if: needs.deploy-development.result == 'success'
+        run: |
+          echo "✅ Development deployment successful!"
+          # Add Slack/Discord/Email notification here if needed
+
+      - name: Notify Failure
+        if: needs.deploy-development.result == 'failure'
+        run: |
+          echo "❌ Development deployment failed!"
+          # Add Slack/Discord/Email notification here if needed
