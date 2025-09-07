@@ -1,4 +1,4 @@
-import { FeedbackStatuses } from '../../common/build';
+import { FeedbackStatuses } from '../../common/build/index';
 import mongoose from 'mongoose';
 import { UserDoc } from './user';
 
