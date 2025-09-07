@@ -5,21 +5,17 @@ nixPkgs = ["nodejs-18_x", "npm-9_x"]
 cmds = [
   "npm install -g npm@latest",
   "cd common && npm install",
-  "cd ../server && npm install", 
-  "cd ../worker && npm install",
-  "cd ../client && npm install"
+  "cd ../server && npm install"
 ]
 
 [phases.build]
 cmds = [
   "cd common && npm run build",
-  "cd ../server && npm run build",
-  "cd ../worker && npm run build", 
-  "cd ../client && npm run build"
+  "cd ../server && npm run build"
 ]
 
 [start]
-cmd = "cd server && node dist/index.js"
+cmd = "chmod +x start.sh && ./start.sh"
 
 [variables]
 NODE_ENV = "production"
