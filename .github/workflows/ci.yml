@@ -154,7 +154,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push server image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./server/Dockerfile
@@ -164,7 +164,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build and push client image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./client
           file: ./client/Dockerfile
@@ -174,7 +174,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build and push worker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./worker
           file: ./worker/Dockerfile
