@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import pinoHttp from 'pino-http';
 import cors from 'cors';
+import path from 'path';
 
 // Extend Express Request interface
 declare global {
@@ -41,8 +42,19 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 
+// Configure static file serving
+const staticOptions = {
+  setHeaders: (res: any, path: string) => {
+    // Set proper MIME type for JavaScript modules
+    if (path.endsWith('.mjs') || path.endsWith('.js')) {
+      res.set('Content-Type', 'application/javascript');
+    }
+  }
+};
+
 // Middleware setup
 app.use(json());
+app.use(express.static(path.join(__dirname, '../../client/dist'), staticOptions));
 
 // Response time middleware
 app.use((req, res, next) => {
@@ -106,8 +118,11 @@ import { indexRouter } from './routes';
 app.use(indexRouter);
 
 // Catch all for not found routes
-app.all('*', async (req, res) => {
-  throw new NotFoundError();
+app.get('*', (req, res, next) => {
+  if (!req.path.startsWith('/api')) {
+    return res.sendFile(path.join(__dirname, '../../client/dist', 'index.html'));
+  }
+  next(new NotFoundError());
 });
 
 // Error handling middleware
