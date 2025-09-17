@@ -15,6 +15,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   isLoading, 
   requiredRole 
 }) => {
+  // Debug logging
+  console.log('ProtectedRoute - user:', user, 'isLoading:', isLoading, 'requiredRole:', requiredRole);
+
   // Show loading spinner while checking authentication
   if (isLoading) {
     return (
@@ -29,15 +32,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Redirect to login if not authenticated
   if (!user) {
+    console.log('ProtectedRoute - No user, redirecting to /auth');
     return <Navigate to="/auth" replace />;
   }
 
   // Check role-based access if required
   if (requiredRole && user.role !== requiredRole) {
+    console.log('ProtectedRoute - Role mismatch, redirecting to appropriate dashboard');
     // Redirect to appropriate dashboard based on user's actual role
     return <Navigate to={user.role === 'admin' ? '/admin' : '/dashboard'} replace />;
   }
 
+  console.log('ProtectedRoute - Rendering children');
   return <>{children}</>;
 };
 

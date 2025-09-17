@@ -81,7 +81,7 @@ const App = () => {
             <Route 
               path="/dashboard" 
               element={
-                <ProtectedRoute user={currentUser} isLoading={isLoading} requiredRole="user">
+                <ProtectedRoute user={currentUser} isLoading={isLoading}>
                   <UserDashboard user={currentUser!} onLogout={handleLogout} />
                 </ProtectedRoute>
               } 
