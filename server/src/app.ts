@@ -5,6 +5,7 @@ import cookieSession from 'cookie-session';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import pinoHttp from 'pino-http';
+import cors from 'cors';
 
 // Extend Express Request interface
 declare global {
@@ -24,6 +25,21 @@ const app = express();
 
 // Trust proxy when behind ingress-nginx
 app.set('trust proxy', true);
+
+// CORS middleware - allow requests from Vercel domains
+app.use(cors({
+  origin: [
+    'https://echo-board-beta.vercel.app',
+    'https://echo-board-git-dev-ismaels-projects-85a49b0a.vercel.app',
+    'https://echo-board-git-main-ismaels-projects-85a49b0a.vercel.app',
+    'https://echo-board-39999fyg0-ismaels-projects-85a49b0a.vercel.app',
+    'http://localhost:3000', // For local development
+    'http://localhost:5173'  // For Vite dev server
+  ],
+  credentials: true, // Allow cookies to be sent
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+}));
 
 // Middleware setup
 app.use(json());
