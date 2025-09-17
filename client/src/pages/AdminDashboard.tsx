@@ -72,7 +72,7 @@ const AdminDashboard = ({ user, onLogout, className }: AdminDashboardProps) => {
     const fetchAllFeedback = async () => {
       try {
         const response = await feedbackAPI.getAll();
-        setFeedbackList(response.data);
+        setFeedbackList(response);
       } catch (error: any) {
         toast({
           title: "Error fetching feedback",
@@ -84,8 +84,8 @@ const AdminDashboard = ({ user, onLogout, className }: AdminDashboardProps) => {
 
     const fetchHealthData = async () => {
       try {
-        const response = await healthAPI.getStatus();
-        setHealthData(response.data);
+        const response = await healthAPI.getHealth();
+        setHealthData(response);
       } catch (error: any) {
         console.error("Failed to fetch health data:", error);
         // Set fallback health data
@@ -189,7 +189,7 @@ const AdminDashboard = ({ user, onLogout, className }: AdminDashboardProps) => {
   const refreshData = async () => {
     try {
       const response = await feedbackAPI.getAll();
-      setFeedbackList(response.data);
+      setFeedbackList(response);
       setSearchQuery("");
       setStatusFilter("all");
       toast({

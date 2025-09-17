@@ -1,78 +1,54 @@
-import axios from 'axios';
+import axios from "axios";
+import { AuthResponse, UserType, Feedback } from "@/types";
 
-// Create axios instance with base configuration
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '', // Use environment variable or empty for relative URLs
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+const instance = axios.create({
+  withCredentials: true,
+  baseURL: import.meta.env.VITE_SERVER_URL || "http://localhost:8080",
 });
 
-// Request interceptor - no need to add auth token since we're using session cookies
-api.interceptors.request.use(
-  (config) => {
-    // Session-based authentication - no need to add token to headers
-    return config;
+const authAPI = {
+  signIn: async (loginData): Promise<AuthResponse> => {
+    const response = await instance.post("/api/users/login", loginData);
+    return response.data as AuthResponse;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Unauthorized - redirect to login
-      window.location.reload();
-    }
-    return Promise.reject(error);
-  }
-);
-
-import { UserType, Feedback, AuthResponse } from '@/types';
-
-// API methods
-export const authAPI = {
-  signUp: (data: { email: string; password: string; name: string }) =>
-    api.post<AuthResponse>('/api/users/signup', data),
-  
-  signIn: (data: { email: string; password: string }) =>
-    api.post<AuthResponse>('/api/users/signin', data),
-  
-  signOut: () => api.post('/api/users/signout'),
-  
-  getCurrentUser: () => api.get('/api/users/currentuser'),
+  signUp: async (registerData): Promise<AuthResponse> => {
+    const response = await instance.post("/api/users/register", registerData);
+    return response.data as AuthResponse;
+  },
+  logout: async () => {
+    const response = await instance.post("/api/users/logout");
+    return response.data as any;
+  },
+  currentUser: async (): Promise<{ user: UserType | null }> => {
+    const response = await instance.get("/api/users/currentuser");
+    return response.data as { user: UserType | null };
+  },
 };
 
-export const feedbackAPI = {
-  getAll: () => api.get<Feedback[]>('/api/feedback'),
-  
-  getById: (id: string) => api.get<Feedback>(`/api/feedback/${id}`),
-  
-  create: (data: { title: string; message: string; rating: number; userId: string }) =>
-    api.post<Feedback>('/api/feedback', data),
-  
-  update: (id: string, data: { status?: string; title?: string; message?: string; rating?: number }) =>
-    api.put(`/api/feedback/${id}`, data),
-  
-  delete: (id: string) => api.delete(`/api/feedback/${id}`),
+const feedbackAPI = {
+  // Placeholder for feedback API methods
+  getAll: async (): Promise<Feedback[]> => {
+    const response = await instance.get("/feedback");
+    return response.data as Feedback[];
+  },
+  create: async (feedbackData): Promise<Feedback> => {
+    const response = await instance.post("/feedback", feedbackData);
+    return response.data as Feedback;
+  },
+  update: async (id: string, updateData: Partial<Feedback>): Promise<Feedback> => {
+    const response = await instance.put(`/feedback/${id}`, updateData);
+    return response.data as Feedback;
+  },
+  delete: async (id: string): Promise<void> => {
+    await instance.delete(`/feedback/${id}`);
+  },
 };
 
-export const userAPI = {
-  getAll: () => api.get('/api/users'),
-  
-  getById: (id: string) => api.get(`/api/users/${id}`),
-  
-  update: (id: string, data: any) => api.patch(`/api/users/${id}`, data),
-  
-  delete: (id: string) => api.delete(`/api/users/${id}`),
+const healthAPI = {
+  getHealth: async (): Promise<any> => {
+    const response = await instance.get("/health");
+    return response.data as any;
+  },
 };
 
-export const healthAPI = {
-  getStatus: () => api.get('/api/health'),
-};
-
-export default api;
+export { authAPI, feedbackAPI, healthAPI };

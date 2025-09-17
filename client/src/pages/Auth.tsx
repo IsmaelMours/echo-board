@@ -39,8 +39,8 @@ const Auth = ({ onAuthSuccess, className }: AuthProps) => {
     setIsLoading(true);
 
     try {
-      const response = await authAPI.signIn(loginData);
-      const { user, message } = response.data;
+      const response: AuthResponse = await authAPI.signIn(loginData);
+      const { message, user, redirectToLogin } = response;
       
       toast({
         title: "Welcome back!",
@@ -74,8 +74,8 @@ const Auth = ({ onAuthSuccess, className }: AuthProps) => {
     setIsLoading(true);
 
     try {
-      const response = await authAPI.signUp(registerData);
-      const { user, message, redirectToLogin } = response.data;
+      const response: AuthResponse = await authAPI.signUp(registerData);
+      const { message, user, redirectToLogin } = response;
       
       toast({
         title: "Account created!",

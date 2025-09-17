@@ -53,7 +53,7 @@ const UserDashboard = ({ user, onLogout, className }: UserDashboardProps) => {
   const fetchFeedback = async () => {
     try {
       const response = await feedbackAPI.getAll();
-      setFeedbackList(response.data);
+      setFeedbackList(response);
     } catch (error: any) {
       toast({
         title: "Error fetching feedback",
@@ -69,7 +69,7 @@ const UserDashboard = ({ user, onLogout, className }: UserDashboardProps) => {
     try {
       const feedbackDataWithUser = { ...formData, userId: user.id };
       const response = await feedbackAPI.create(feedbackDataWithUser);
-      const newFeedback = response.data;
+      const newFeedback = response;
       setFeedbackList(prev => [newFeedback, ...prev]);
       
       toast({
