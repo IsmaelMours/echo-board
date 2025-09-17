@@ -47,8 +47,7 @@ const Auth = ({ onAuthSuccess, className }: AuthProps) => {
         description: `Successfully logged in as ${user.name}`,
       });
       onAuthSuccess(user);
-      // Navigate to appropriate dashboard based on user role
-      navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+      // The PublicRoute will handle the redirect based on user role
     } catch (error: any) {
       toast({
         title: "Login failed",
@@ -85,10 +84,8 @@ const Auth = ({ onAuthSuccess, className }: AuthProps) => {
       onAuthSuccess(user);
       if (redirectToLogin) {
         setActiveTab("login");
-      } else {
-        // Navigate to appropriate dashboard based on user role
-        navigate(user.role === 'admin' ? '/admin' : '/dashboard');
       }
+      // The PublicRoute will handle the redirect based on user role
     } catch (error: any) {
       toast({
         title: "Registration failed",
