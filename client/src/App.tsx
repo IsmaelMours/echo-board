@@ -23,10 +23,13 @@ const App = () => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
+        console.log('Checking auth status...');
         const response = await authAPI.getCurrentUser();
+        console.log('Auth response:', response);
         const { currentUser: user } = response.data as { currentUser: UserType | null };
         setCurrentUser(user);
       } catch (error) {
+        console.log('Auth check failed:', error);
         // User is not authenticated
         setCurrentUser(null);
       } finally {
@@ -46,6 +49,18 @@ const App = () => {
       setCurrentUser(null);
     }
   };
+
+  // Add error boundary and loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-muted-foreground">Loading EchoBoard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
