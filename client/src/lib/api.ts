@@ -3,7 +3,7 @@ import { AuthResponse, UserType, Feedback } from "@/types";
 
 const instance = axios.create({
   withCredentials: true,
-  baseURL: import.meta.env.VITE_SERVER_URL || "http://localhost:8080",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080",
 });
 
 const authAPI = {
