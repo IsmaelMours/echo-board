@@ -31,7 +31,7 @@ app.set('trust proxy', true);
 app.use(cors({
   origin: [
     'https://echo-board-beta.vercel.app',
-    'https://echo-board-git-dev-ismaels-projects-85a49b0a.vercel.app',
+    'https://echo-board-two.vercel.app',
     'https://echo-board-git-main-ismaels-projects-85a49b0a.vercel.app',
     'https://echo-board-39999fyg0-ismaels-projects-85a49b0a.vercel.app',
     'http://localhost:3000', // For local development
