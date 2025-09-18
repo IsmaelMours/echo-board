@@ -8,15 +8,15 @@ const instance = axios.create({
 
 const authAPI = {
   signIn: async (loginData): Promise<AuthResponse> => {
-    const response = await instance.post("/api/users/login", loginData);
+    const response = await instance.post("/api/users/signin", loginData);
     return response.data as AuthResponse;
   },
   signUp: async (registerData): Promise<AuthResponse> => {
-    const response = await instance.post("/api/users/register", registerData);
+    const response = await instance.post("/api/users/signup", registerData);
     return response.data as AuthResponse;
   },
   logout: async () => {
-    const response = await instance.post("/api/users/logout");
+    const response = await instance.post("/api/users/signout", {});
     return response.data as any;
   },
   currentUser: async (): Promise<{ user: UserType | null }> => {
@@ -28,25 +28,25 @@ const authAPI = {
 const feedbackAPI = {
   // Placeholder for feedback API methods
   getAll: async (): Promise<Feedback[]> => {
-    const response = await instance.get("/feedback");
+    const response = await instance.get("/api/feedback");
     return response.data as Feedback[];
   },
   create: async (feedbackData): Promise<Feedback> => {
-    const response = await instance.post("/feedback", feedbackData);
+    const response = await instance.post("/api/feedback", feedbackData);
     return response.data as Feedback;
   },
   update: async (id: string, updateData: Partial<Feedback>): Promise<Feedback> => {
-    const response = await instance.put(`/feedback/${id}`, updateData);
+    const response = await instance.put(`/api/feedback/${id}`, updateData);
     return response.data as Feedback;
   },
   delete: async (id: string): Promise<void> => {
-    await instance.delete(`/feedback/${id}`);
+    await instance.delete(`/api/feedback/${id}`);
   },
 };
 
 const healthAPI = {
   getHealth: async (): Promise<any> => {
-    const response = await instance.get("/health");
+    const response = await instance.get("/api/health");
     return response.data as any;
   },
 };
